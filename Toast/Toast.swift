@@ -433,17 +433,26 @@ public extension UIView {
             wrapperView.layer.shadowOffset = style.shadowOffset
         }
         
+			
+				var marginHorizontal = style.horizontalPadding
+				var marginVertical = style.verticalPadding
+				
         if let image = image {
+						
+						// 如果有Image 调整margin值
+						marginHorizontal = style.contentMaring
+						marginVertical = style.contentMaring
+					
             imageView = UIImageView(image: image)
             imageView?.contentMode = .scaleAspectFit
-            imageView?.frame = CGRect(x: style.horizontalPadding, y: style.verticalPadding, width: style.imageSize.width, height: style.imageSize.height)
+            imageView?.frame = CGRect(x: marginHorizontal, y: marginVertical, width: style.imageSize.width, height: style.imageSize.height)
         }
         
         var imageRect = CGRect.zero
         
         if let imageView = imageView {
-            imageRect.origin.x = style.horizontalPadding
-            imageRect.origin.y = style.verticalPadding
+            imageRect.origin.x = marginHorizontal
+            imageRect.origin.y = marginVertical
             imageRect.size.width = imageView.bounds.size.width
             imageRect.size.height = imageView.bounds.size.height
         }
@@ -458,7 +467,7 @@ public extension UIView {
             titleLabel?.backgroundColor = UIColor.clear
             titleLabel?.text = title;
             
-            let maxTitleSize = CGSize(width: (self.bounds.size.width * style.maxWidthPercentage) - imageRect.size.width, height: self.bounds.size.height * style.maxHeightPercentage)
+            let maxTitleSize = CGSize(width: (self.bounds.size.width * style.maxWidthPercentage), height: self.bounds.size.height * style.maxHeightPercentage)
             let titleSize = titleLabel?.sizeThatFits(maxTitleSize)
             if let titleSize = titleSize {
                 titleLabel?.frame = CGRect(x: 0.0, y: 0.0, width: titleSize.width, height: titleSize.height)
@@ -467,7 +476,14 @@ public extension UIView {
         
         if let message = message {
             messageLabel = UILabel()
-            messageLabel?.text = message
+						
+						let paraph = NSMutableParagraphStyle()
+						//将行间距设置为28
+					  paraph.lineSpacing = CGFloat(style.messageLineSpacing)
+						//样式属性集合
+						let attributes = [NSAttributedString.Key.font:UIFont.systemFont(ofSize: 15),
+														NSAttributedString.Key.paragraphStyle: paraph]
+						messageLabel?.attributedText = NSAttributedString(string: message, attributes: attributes)
             messageLabel?.numberOfLines = style.messageNumberOfLines
             messageLabel?.font = style.messageFont
             messageLabel?.textAlignment = style.messageAlignment
@@ -475,7 +491,7 @@ public extension UIView {
             messageLabel?.textColor = style.messageColor
             messageLabel?.backgroundColor = UIColor.clear
             
-            let maxMessageSize = CGSize(width: (self.bounds.size.width * style.maxWidthPercentage) - imageRect.size.width, height: self.bounds.size.height * style.maxHeightPercentage)
+            let maxMessageSize = CGSize(width: (self.bounds.size.width * style.maxWidthPercentage), height: self.bounds.size.height * style.maxHeightPercentage)
             let messageSize = messageLabel?.sizeThatFits(maxMessageSize)
             if let messageSize = messageSize {
                 let actualWidth = min(messageSize.width, maxMessageSize.width)
@@ -484,11 +500,11 @@ public extension UIView {
             }
         }
   
-        var titleRect = CGRect.zero
+				var titleRect = CGRect.zero
         
         if let titleLabel = titleLabel {
-            titleRect.origin.x = imageRect.origin.x + imageRect.size.width + style.horizontalPadding
-            titleRect.origin.y = style.verticalPadding
+            titleRect.origin.x = marginHorizontal
+            titleRect.origin.y = imageRect.origin.y + imageRect.size.height + style.verticalPadding
             titleRect.size.width = titleLabel.bounds.size.width
             titleRect.size.height = titleLabel.bounds.size.height
         }
@@ -496,16 +512,26 @@ public extension UIView {
         var messageRect = CGRect.zero
         
         if let messageLabel = messageLabel {
-            messageRect.origin.x = imageRect.origin.x + imageRect.size.width + style.horizontalPadding
-            messageRect.origin.y = titleRect.origin.y + titleRect.size.height + style.verticalPadding
+					
+            messageRect.origin.x = marginHorizontal
+						
+						if (titleRect.origin.y == 0) {
+							messageRect.origin.y = imageRect.origin.y + imageRect.size.height + style.verticalPadding
+						} else {
+							messageRect.origin.y = titleRect.origin.y + titleRect.size.height + style.verticalPadding
+						}
+
             messageRect.size.width = messageLabel.bounds.size.width
             messageRect.size.height = messageLabel.bounds.size.height
         }
         
         let longerWidth = max(titleRect.size.width, messageRect.size.width)
+			
         let longerX = max(titleRect.origin.x, messageRect.origin.x)
-        let wrapperWidth = max((imageRect.size.width + (style.horizontalPadding * 2.0)), (longerX + longerWidth + style.horizontalPadding))
-        let wrapperHeight = max((messageRect.origin.y + messageRect.size.height + style.verticalPadding), (imageRect.size.height + (style.verticalPadding * 2.0)))
+			
+        let wrapperWidth = max((imageRect.size.width + (marginHorizontal * 2.0)), (longerX + longerWidth + marginHorizontal))
+			
+        let wrapperHeight = max((messageRect.origin.y + messageRect.size.height + marginVertical), (imageRect.size.height + (style.verticalPadding * 2.0)))
         
         wrapperView.frame = CGRect(x: 0.0, y: 0.0, width: wrapperWidth, height: wrapperHeight)
         
@@ -522,6 +548,8 @@ public extension UIView {
         }
         
         if let imageView = imageView {
+						imageRect.origin.x = (wrapperWidth - imageRect.size.width)/2
+						imageView.frame = imageRect
             wrapperView.addSubview(imageView)
         }
         
@@ -547,9 +575,9 @@ public struct ToastStyle {
     public init() {}
     
     /**
-     The background color. Default is `.black` at 80% opacity.
+     The background color. Default is `#333333` at 80% opacity.
     */
-    public var backgroundColor: UIColor = UIColor.black.withAlphaComponent(0.8)
+    public var backgroundColor: UIColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 0.8)
     
     /**
      The title color. Default is `UIColor.whiteColor()`.
@@ -581,51 +609,61 @@ public struct ToastStyle {
         }
     }
     
+		/**
+		The spacing from the all edge of the toast view to the content When an image
+		is present default 16 margin, other times this margin is horizontalPadding and 	verticalPadding
+		*/
+    public var contentMaring: CGFloat = 16
     /**
      The spacing from the horizontal edge of the toast view to the content. When an image
      is present, this is also used as the padding between the image and the text.
      Default is 10.0.
      
     */
-    public var horizontalPadding: CGFloat = 10.0
+    public var horizontalPadding: CGFloat = 8.0
     
     /**
      The spacing from the vertical edge of the toast view to the content. When a title
      is present, this is also used as the padding between the title and the message.
-     Default is 10.0. On iOS11+, this value is added added to the `safeAreaInset.top`
+     Default is 8.0. On iOS11+, this value is added added to the `safeAreaInset.top`
      and `safeAreaInsets.bottom`.
     */
-    public var verticalPadding: CGFloat = 10.0
+    public var verticalPadding: CGFloat = 8.0
     
     /**
-     The corner radius. Default is 10.0.
+     The corner radius. Default is 8.0.
     */
-    public var cornerRadius: CGFloat = 10.0;
+    public var cornerRadius: CGFloat = 8.0;
     
     /**
      The title font. Default is `.boldSystemFont(16.0)`.
     */
-    public var titleFont: UIFont = .boldSystemFont(ofSize: 16.0)
+    public var titleFont: UIFont = .boldSystemFont(ofSize: 14.0)
     
     /**
      The message font. Default is `.systemFont(ofSize: 16.0)`.
     */
-    public var messageFont: UIFont = .systemFont(ofSize: 16.0)
+    public var messageFont: UIFont = .systemFont(ofSize: 14.0)
     
     /**
-     The title text alignment. Default is `NSTextAlignment.Left`.
+     The title text alignment. Default is `NSTextAlignment.center`.
     */
-    public var titleAlignment: NSTextAlignment = .left
+    public var titleAlignment: NSTextAlignment = .center
     
     /**
-     The message text alignment. Default is `NSTextAlignment.Left`.
+     The message text alignment. Default is `NSTextAlignment.center`.
     */
-    public var messageAlignment: NSTextAlignment = .left
+    public var messageAlignment: NSTextAlignment = .center
     
     /**
      The maximum number of lines for the title. The default is 0 (no limit).
     */
     public var titleNumberOfLines = 0
+		
+	 /**
+	   The messageLabel LineSpacing The default is 5.
+	 */
+		public var messageLineSpacing = 3
     
     /**
      The maximum number of lines for the message. The default is 0 (no limit).
@@ -653,9 +691,9 @@ public struct ToastStyle {
     }
 
     /**
-     The shadow radius. Default is 6.0.
+     The shadow radius. Default is 8.0.
     */
-    public var shadowRadius: CGFloat = 6.0
+    public var shadowRadius: CGFloat = 8.0
     
     /**
      The shadow offset. The default is 4 x 4.
@@ -663,9 +701,9 @@ public struct ToastStyle {
     public var shadowOffset = CGSize(width: 4.0, height: 4.0)
     
     /**
-     The image size. The default is 80 x 80.
+     The image size. The default is 32 x 32.
     */
-    public var imageSize = CGSize(width: 80.0, height: 80.0)
+    public var imageSize = CGSize(width: 32.0, height: 32.0)
     
     /**
      The size of the toast activity view when `makeToastActivity(position:)` is called.
@@ -684,9 +722,9 @@ public struct ToastStyle {
     public var activityIndicatorColor: UIColor = .white
     
     /**
-     Activity background color. Default is `.black` at 80% opacity.
+     Activity background color. Default is `#333333` at 80% opacity.
      */
-    public var activityBackgroundColor: UIColor = UIColor.black.withAlphaComponent(0.8)
+    public var activityBackgroundColor: UIColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 0.8)
     
 }
 
